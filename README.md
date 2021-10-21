@@ -1,2 +1,2 @@
-# sudoku-
+# sudoku
 sudoku in c
