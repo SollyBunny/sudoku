@@ -2,6 +2,8 @@
 #include <stdio.h>
 #include <termios.h>
 #include <time.h>
+#include <pthread.h>
+#include <unistd.h>
 
 // Key codes
 #define BREAK 3
@@ -78,6 +80,22 @@ int gridcheck() {
 	
 }
 
+void timerfunc(void) {
+
+	unsigned int time = 0;
+
+	while (1) {
+		printf("\x1b[7m\x1b[%u;%uHTime: %02u:%02u", 
+			gridy + 2,
+			(31 - 11 - intsize(GRIDSIZE)) / 2, 
+			time / 60, 
+			time % 60
+		);
+		fflush(stdout);
+		usleep(1000000);
+		time++;
+	}
+}
 
 int main(void) {
 
@@ -91,18 +109,19 @@ int main(void) {
 		) % 9 + 1;
 	}
 
-	
+	// Genrate grid
 	unsigned int temp;
 	unsigned int r1;
 	unsigned int r2;
 
-	for (unsigned int i = 0; i < 20; ++i) {
-		gridgenloopstart:
-
-		for (unsigned int j = 0; j < GRIDSIZE; ++j) {
+	for (unsigned int i = 0; i < 20; ++i) { gridgenloopstart:
+		
+		for (unsigned int j = 0; j < GRIDSIZE; ++j) { // move grid into tempgrid as a backup
 			tempgrid[j] = grid[j].val;
 		}
-		if (rand() % 2 < 1) {
+
+		// choose a random operation
+		if (rand() % 2 < 1) { // swap columns
 			r1 = (rand() % 9) * 9;
 			r2 = (rand() % 9) * 9;
 			for (unsigned int m = 0; m < 9; ++m) {
@@ -110,7 +129,7 @@ int main(void) {
 				grid[r1 + m].val = grid[r2 + m].val;
 				grid[r2 + m].val = temp; 
 			}
-		} else {
+		} else { // swap rows
 			r1 = (rand() % 9);
 			r2 = (rand() % 9);
 			for (unsigned int m = 0; m < 9; ++m) {
@@ -120,7 +139,7 @@ int main(void) {
 			}
 		}
 
-		if (!gridcheck()) {
+		if (!gridcheck()) { // if it fails the gridcheckm, swap the tempgrid back into grid and try again
 			for (unsigned int j = 0; j < GRIDSIZE; ++j) {
 				grid[j].val = tempgrid[j];
 			}
@@ -131,6 +150,7 @@ int main(void) {
 
 	tilesleft = 0;
 	for (unsigned int i = 0; i < GRIDSIZE / DIFFICULTY; ++i) { generateusestart:
+	//for (unsigned int i = 0; i < 1; ++i) { generateusestart:
 		r1 = rand() % GRIDSIZE;
 		if (grid[r1].val == 0) goto generateusestart;
 		grid[r1].val = 0;
@@ -181,6 +201,15 @@ int main(void) {
 	);
 	
 	//goto win; // DEBUG (print & exit)
+
+	// start the timer thread
+	pthread_t timerthread;
+	pthread_create(
+		&timerthread, 
+		NULL, 
+		(void *)&timerfunc, 
+		NULL
+	);
 
 	// set initial cursor position
 	cursorpos = GRIDSIZE / 2; // in the middle of the screen
