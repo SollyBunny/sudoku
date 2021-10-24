@@ -2,11 +2,6 @@
 #include <stdio.h>
 #include <termios.h>
 #include <time.h>
-#define digittochar(a) (a==0) ? (' ') : (a+48)
-
-// #define false 0
-// #define true  1
-// typedef int bool;
 
 // Key codes
 #define BREAK 3
@@ -19,6 +14,7 @@
 #define KEY0 48
 
 #define GRIDSIZE (9 * 9) // shoudnt be changed
+#define DIFFICULTY 2
 
 struct Tile {
 	unsigned int val;
@@ -36,22 +32,8 @@ unsigned int gridpos[] = {28, 30, 32, 36, 38, 40, 44, 46, 48, 54, 56, 58, 62, 64
 
 unsigned int cursorpos;
 
-/*char digittochar(unsigned int i) {
-	switch (i) {
-		case 0: return '0';
-		case 1: return '1';
-		case 2: return '2';
-		case 3: return '3';
-		case 4: return '4';
-		case 5: return '5';
-		case 6: return '6';
-		case 7: return '7';
-		case 8: return '8';
-		case 9: return '9';
-	}
-	return 'E';
-	return 48 + i; // this really works lmao
-}*/
+// util function turn a digit to a char
+#define digittochar(a) (a==0) ? (' ') : (a+48)
 
 // util function to get base 10 intiger "size"
 unsigned int intsize(unsigned int a) {
@@ -60,18 +42,13 @@ unsigned int intsize(unsigned int a) {
 	else                    return 3;
 }
 
-int checkgrid() {
-	//return 1;
+// checks if the current grid is valid
+int gridcheck() {
 
-	//unsigned int sum = grid[0] * 3;
-
-	// i = row
-	// m = col
-	// j = block blk
-
-	unsigned int row[9];
-	unsigned int col[9];
-	unsigned int blk[9];
+	// These lists store the tiles in the column/row/block to see if there is a repeat
+	unsigned int row[9]; // row (9x1)
+	unsigned int col[9]; // column (1x9)
+	unsigned int blk[9]; // block (3x3)
 	
 	for (unsigned int i = 0; i < 9; ++i) {
 
@@ -88,197 +65,23 @@ int checkgrid() {
 			col[m] = grid[(m * 9) + i].val;
 			blk[m] = grid[((i * 3) % 9) + (i / 3 * 9 * 3) + (m % 3) + (m / 3 * 9)].val;
 
-			for (unsigned int _ = 0; _ < m; ++_) { // only have to compare upto whatve been set
+			for (unsigned int _ = 0; _ < m; ++_) { // only have to compare upto whatve been set, instead of comparing a bunch of 0's
 				if ((row[_] == row[m]) && (row[_] != 0)) return 0;
 				if ((col[_] == col[m]) && (col[_] != 0)) return 0;
 				if ((blk[_] == blk[m]) && (blk[_] != 0)) return 0;
 			}
-
-			// m += 9;
-			// j++;
-			// if (j % 3 == 0) {
-				// j += 9 - 3;
-			// }
 		}
 
-		
-		
-		
-		// m = i / 9;
-		// j = ((m * 3) % 9) + (m / 3 * 9 * 3);
-		//printf("J DONE: %u\n", j);
-
 	}
-
-	
-	// unsigned int m = 9;
-	// unsigned int j = 1;
-	// for (unsigned int i = 1; i < GRIDSIZE; ++i) {
-// 
-		// if (i % 9 == 0) {
-// 
-			// for (unsigned int _ = 0; _ < 9; ++_) {
-				// row[_] = 0;
-				// col[_] = 0;
-				// blk[_] = 0;
-			// }
-			// 
-			// /*if (sum <= 135) { // 135
-				// //printf("FAIL: %u %u %u = %u\n", m, i, j, sum);
-				// return 0;
-			// }*/
-// 
-			// //sum = 0;
-			// 
-			// m = i / 9;
-			// j = ((m * 3) % 9) + (m / 3 * 9 * 3);
-			// //printf("J DONE: %u\n", j);
-		// }
-// 
-		// //printf("j: %uA %uB\n", j, grid[j]);
-		// /*sum += grid[i];
-		// sum += grid[m];
-		// sum += grid[j];*/
-// 
-		// printf("%u %u %u\n", i, m, j);
-		// // check if item is already in list
-		// for (unsigned int _ = 0; _ < 9; ++_) {
-			// //if (grid[i] == 0) {putchar('i');continue;}
-			// printf("%u == %u is %u\n", row[_], grid[i], row[_] ==  grid[i]);
-			// if (row[_] == grid[i]) { printf("OH FUCK OH FUCK OH FUCK"); return 0; };
-		// }
-		// row[i / 9] = grid[i];
-		// putchar('\n');
-		// 
-		// for (unsigned int _ = 0; _ < 9; ++_) {
-			// //if (grid[m] == 0) {putchar('m');continue;}
-			// printf("%u == %u is %u\n", col[_], grid[m], col[_] ==  grid[m]);
-			// if (col[_] == grid[m]) { printf("OH FUCK OH FUCK OH FUCK"); return 0; };
-		// }
-		// col[i / 9] = grid[m];
-		// putchar('\n');
-// 
-		// for (unsigned int _ = 0; _ < 9; ++_) {
-			// //if (grid[j] == 0) {putchar('j');continue;}
-			// printf("%u == %u is %u\n", blk[_], grid[j], blk[_] ==  grid[j]);
-			// if (blk[_] == grid[j]) { printf("OH FUCK OH FUCK OH FUCK"); return 0; };
-		// }
-		// blk[i / 9] = grid[j];
-		// putchar('\n');
-// 
-		// 
-		// putchar('\n');
-// 
-		// m += 9;
-		// j++;
-		// if (j % 3 == 0) {
-			// j += 9 - 3;
-		// }
-// 
-	// }*/
-		// sum = 0;
-		// for (unsigned int x = 0; x < 9; ++x) {
-			// sum += grid[m];
-			// sum += grid[i];
-			// i++;
-			// m+=9;
-		// }
-		// if (sum != 90) {
-			// printf("%u %u\n", sum, sum);
-			// return 0;
-		// }
-		// m++;
-	// }
 
 	return 1;
 	
 }
 
-void print() {
-
-	// i know this may be ineffecient but it makes the code so much more readable x-x
-
-	char * i;
-	struct Tile * m;
-
-	/*unsigned int j = 0;
-	for (i = gridtxt; *i != '\n'; ++i) {
-		j++;
-	}
-	printf("\x1b[%uC", j / 14);*/
-
-	m = grid;
-	for (i = gridtxt; *i; ++i) {
-		if (*i == 'A') {
-			putchar(digittochar((*m).val));
-			++m;
-		} else if (*i == '\n') {
-			putchar(' ');
-			putchar(' ');
-			putchar('\n');
-			putchar(' ');
-			putchar(' ');
-		} else {
-			putchar(*i);
-		}
-	}
-
-	/*fputs("+-------+-------+-------+\n| ", stdout);
-
-	unsigned int i = 0;
-	for (unsigned int y = 0; y < 9; ++y) {
-		for (unsigned int x = 0; x < 9; ++x) {
-	
-			if (x != 0 && x % 3 == 0) {
-				putchar('|');
-				putchar(' ');
-			}
-
-			printf("%u ", grid[i]);
-
-			i++;
-		}
-		putchar('|');
-		putchar('\n');
-		if (y != 0 && (y + 1) % 3 == 0) {
-
-			putchar('+');
-			for (unsigned int j = 0; j < 9 * 2 + 5; ++j) {
-				if ((j + 1) % 8 == 0) putchar('+');
-				else                  putchar('-');
-			}
-			putchar('+');
-			putchar('\n');
-			
-		} else {
-
-			
-			
-		}
-
-		putchar('|');
-					putchar(' ');
-	}*/
-
-
-}
 
 int main(void) {
 
-	/*grid = malloc((
-		GRIDSIZE
-	) * sizeof(unsigned int));*/
-
 	srand(time(0));
-
-	// set terminal settins (dont echo characters / queue stdin / ignore ctrl-c )
-	struct termios term, restore;
-	tcgetattr(0, &term);
-	tcgetattr(0, &restore); // backup the original terminal state to restore later
-	term.c_lflag &= ~(ICANON|ECHO|ISIG);
-	tcsetattr(0, TCSANOW, &term);
-
-	printf("\x1b[2J\x1b[48;5;237m\x1b[?25l\x1b[H\x1b[1m\x1b[7m");
 	
 	for (unsigned int i = 0; i < GRIDSIZE; ++i) {
 		grid[i].val = (
@@ -286,41 +89,8 @@ int main(void) {
 			(i / 9 * 3) + // offset 3 per row
 			(i / (9 * 3)) // offset 9 per large row
 		) % 9 + 1;
-		//grid[i].use = 0;
-		//if (grid[i].val == 0) grid[i].val = 9;
 	}
 
-	/*unsigned int i = 0;
-	for (unsigned int y = 1; y < 9 + 1; ++y) {
-		for (unsigned int x = 1; x < 9 + 1; ++x) {
-			grid[i] = (x + y) % 9 + 1;
-			i++;
-		}	
-	}*/
-
-	/*unsigned int temp = 0;
-	unsigned int r;
-
-	for (unsigned int i = 0; i < GRIDSIZE; ++i) {
-
-		temp = 0;
-		do {
-		
-			if (temp == 10) {
-				for (unsigned int _ = 0; _ < 10; _++) {
-					grid[rand() % GRIDSIZE + 1] = rand() % 9 + 1;
-				}
-				temp = 0;
-			};
-			temp++;
-			r = rand() % 9 + 1;
-			grid[i] = r;
-			
-		} while (0 == checkgrid());
-		
-	}*/
-
-	//board = [[(i + k) % 9 + 1 for i in range(1, height + 1)] for k in range(width)]
 	
 	unsigned int temp;
 	unsigned int r1;
@@ -350,7 +120,7 @@ int main(void) {
 			}
 		}
 
-		if (!checkgrid()) {
+		if (!gridcheck()) {
 			for (unsigned int j = 0; j < GRIDSIZE; ++j) {
 				grid[j].val = tempgrid[j];
 			}
@@ -360,115 +130,177 @@ int main(void) {
 	}
 
 	tilesleft = 0;
-	for (unsigned int i = 0; i < GRIDSIZE / 2; ++i) {
+	for (unsigned int i = 0; i < GRIDSIZE / DIFFICULTY; ++i) { generateusestart:
 		r1 = rand() % GRIDSIZE;
+		if (grid[r1].val == 0) goto generateusestart;
 		grid[r1].val = 0;
 		grid[r1].use = 1;
 		tilesleft++;
 	}
 
-	print();
-	printf("\x1b[22m\x1b[0;%uHTiles Left: %u", 
-		(31 - 12 - intsize(tilesleft)) / 2, 
-		tilesleft
-	);
-	//goto end;
+	// set terminal settins (dont echo characters / queue stdin / ignore ctrl-c )
+	struct termios term, restore;
+	tcgetattr(0, &term);
+	tcgetattr(0, &restore); // backup the original terminal state to restore later
+	term.c_lflag &= ~(ICANON|ECHO|ISIG);
+	tcsetattr(0, TCSANOW, &term);
 
-	cursorpos = GRIDSIZE / 2;
-	while (grid[cursorpos].use == 0) {
+	// print the board
+	/*
+		The grid is stored in `gridtxt` which is just a charstring
+		the charstring has the whole board but instead of numbers there are `A` characters
+		each time an `A` is found it will be replaced by the value of the pointer of the grid and then iterated
+		this means i dont have to have any weird psuedo loops anywhere
+	*/
+	printf("\x1b[2J\x1b[48;5;237m\x1b[?25l\x1b[H\x1b[1m\x1b[7m"); // clear, fg: grey, bg: white, hide cursor, bold, reverse
+
+	char * i;
+	struct Tile * m;
+
+	// loop through the grid
+	m = grid;
+	for (i = gridtxt; *i; ++i) {
+		if (*i == 'A') {
+			putchar(digittochar((*m).val)); // print the number
+			++m;
+		} else if (*i == '\n') { // newline has padding
+			putchar(' ');
+			putchar(' ');
+			putchar('\n');
+			putchar(' ');
+			putchar(' ');
+		} else {
+			putchar(*i);
+		}
+	}
+
+	// prints the current amount of empty tiles left to fill (top center)
+	printf("\x1b[22m\x1b[0;%uHTiles Left: %0*u", // unbold
+		(31 - 12 - intsize(GRIDSIZE)) / 2, 
+		intsize(GRIDSIZE), tilesleft
+	);
+	
+	//goto win; // DEBUG (print & exit)
+
+	// set initial cursor position
+	cursorpos = GRIDSIZE / 2; // in the middle of the screen
+	while (grid[cursorpos].use == 0) { // if the middle is taken up by a tile, keep iterating it by 1 untill an empty one is found
 		cursorpos++;
+		if (cursorpos > GRIDSIZE) cursorpos = 0; // if loops of edge of grid reset to 0
 	}
 
 	char c;
 
-	goto mainloopcontinue;
+	goto mainloopcontinue; // skip first loop (to draw cursor)
 
 	while ((c = getchar()) != BREAK) {
 
 		// clear previous cursor
-		printf("\x1b[7m\x1b[%u;%uH%c", (gridpos[cursorpos] / gridx) + 2, (gridpos[cursorpos] % gridx) + 3, digittochar(grid[cursorpos].val));
+			printf("\x1b[7m\x1b[%u;%uH%c", (gridpos[cursorpos] / gridx) + 2, (gridpos[cursorpos] % gridx) + 3, digittochar(grid[cursorpos].val));
 
-		mainloopkeys:
-			switch (c) {
 
-				case KEYW:
-					cursorpos -= 9;
-					if (cursorpos > GRIDSIZE) {
-						cursorpos += GRIDSIZE;
-					}
-					break;
-					
-				case KEYS:
+		mainloopkeys: switch (c) {
+
+			case KEYW:
+				cursorpos -= 9;
+				if (cursorpos > GRIDSIZE) { // loop top
+					cursorpos += GRIDSIZE;
+				}
+				break;
+				
+			case KEYS:
+				cursorpos += 9;
+				if (cursorpos > GRIDSIZE) { // loop bottom
+					cursorpos -= GRIDSIZE;
+				}
+				break;
+				
+			case KEYA:
+				if (cursorpos % 9 == 0) { // loop left
 					cursorpos += 9;
-					if (cursorpos > GRIDSIZE) {
-						cursorpos -= GRIDSIZE;
-					}
-					break;
-					
-				case KEYA:
-					if (cursorpos % 9 == 0) {
-						cursorpos += 9;
-					}
-					cursorpos--;
-					break;
-					
-				case KEYD:
-					if (cursorpos % 9 == 9 - 1) {
-						cursorpos -= 9;
-					}
-					cursorpos++;
-					break;
+				}
+				cursorpos--;
+				break;
+				
+			case KEYD:
+				if (cursorpos % 9 == 9 - 1) { // loop right
+					cursorpos -= 9;
+				}
+				cursorpos++;
+				break;
 
-				case KEY0:
-					if (grid[cursorpos].val == 0) break;
-					grid[cursorpos].val = 0;
-					tilesleft++;
-					printf("\x1b[0;%uHTiles Left: %u", 
-						(31 - 12 - intsize(tilesleft)) / 2, 
-						tilesleft
-					);
-					break;
+			case KEY0:
+				if (grid[cursorpos].val == 0) continue; // if the tile is alredy blank, cotninue to next loop
+				grid[cursorpos].val = 0; // otherwise set it to 0
+				tilesleft++; // a tile was just freed so add 1 to tilesleft
+				// prints the current amount of empty tiles left to fill (top center)
+				printf("\x1b[0;%uHTiles Left: %0*u", 
+					(31 - 12 - intsize(GRIDSIZE)) / 2, 
+					intsize(GRIDSIZE), tilesleft
+				);
+				break;
 
-				default:
+			default:
 
-					if (c > KEY0 && c <= KEY0 + 9) {
+				if (c > KEY0 && c <= KEY0 + 9) { // key: 0-9 inclusive
 
-						temp = grid[cursorpos].val;
-						grid[cursorpos].val = c - KEY0;	
-						if (!checkgrid()) {
-							grid[cursorpos].val = temp;
-						} else if (temp == 0) {
-							tilesleft--;
-							if (tilesleft == 0) goto win;
-							printf("\x1b[0;%uHTiles Left: %u", 
-								(31 - 12 - intsize(tilesleft)) / 2, 
-								tilesleft
-							);
-						}
-					
+					temp = grid[cursorpos].val;
+					grid[cursorpos].val = c - KEY0;	// set the cursorpos to the key pressed
+					if (!gridcheck()) { // if the attempted value is invalid in the grid, undo the action
+						grid[cursorpos].val = temp;
+					} else if (temp == 0) {
+						tilesleft--;
+						if (tilesleft == 0) goto win; // if all tiles are filled (and are valid), win the game
+						// prints the current amount of empty tiles left to fill (top center)
+						printf("\x1b[0;%uHTiles Left: %0*u", 
+							(31 - 12 - intsize(GRIDSIZE)) / 2, 
+							intsize(GRIDSIZE), tilesleft
+						);
 					}
 
-			}
+					break;
+				
+				}
 
-		if (grid[cursorpos].use == 0) {
+				continue;  // skips any rendering if invalid key
+
+		}
+
+		if (grid[cursorpos].use == 0) { // if the tile which u moved too 
 			goto mainloopkeys;
 		}
 
 		mainloopcontinue:
-
 			printf("\x1b[27m\x1b[%u;%uH%c", (gridpos[cursorpos] / gridx) + 2, (gridpos[cursorpos] % gridx) + 3, digittochar(grid[cursorpos].val));
 		
 	}
 
+	/* // previous printfs, combined into 1 here
+		printf("\x1b[7m\x1b[%u;%uH%c", (gridpos[cursorpos] / gridx) + 2, (gridpos[cursorpos] % gridx) + 3, digittochar(grid[cursorpos].val));
+		printf("\x1b[7m\x1b[0;8H ~~ You Win ~~  "); // padding at the start to clear any reminants of "Tiles Left: x"
+		tcsetattr(0, TCSANOW, &restore); // restore terminal state
+		printf("\x1b[25h\x1b[0m\x1b[%u;0H\n", gridy + 2);
+	*/
+
 	end:
 
+		/* 
+			End:
+			1. reset all modes and goto the end of the grid (show cursor, reset color/bold, goto gridy + 2)
+		*/
+		printf("\x1b[?25h\x1b[0m\x1b[%u;0H\n", gridy + 2);
 		tcsetattr(0, TCSANOW, &restore); // restore terminal state
-		printf("\x1b[25h\x1b[0m\x1b[%u;0\n", gridy + 2 + 1 + 60); // TODO - 1 - 100
-
 		return 0;
 
 	win:
-		printf("\x1b[0;12HYou Win");
+
+		/*
+			Win:
+			1. clear the cursor, to give a clean board on win
+			2. print the "you win" text in the same place as the "Tiles left" text was, use padding on either side to hide any reminants
+		*/
+		printf("\x1b[7m\x1b[%u;%uH%c\x1b[0;8H ~~ You Win ~~", (gridpos[cursorpos] / gridx) + 2, (gridpos[cursorpos] % gridx) + 3, digittochar(grid[cursorpos].val));
+
 		goto end;
 		
 }
