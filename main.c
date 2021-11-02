@@ -80,33 +80,52 @@ int gridcheck() {
 	
 }
 
-void timerfunc(void) {
+void timerfunc(int * clock) {
 
-	unsigned int time = 0;
+	// printf("%u", *argsthread);
+
+	// unsigned int time = 0;
 
 	while (1) {
-		printf("\x1b[7m\x1b[%u;%uHTime: %02u:%02u", 
-			gridy + 2,
-			(31 - 11 - intsize(GRIDSIZE)) / 2, 
-			time / 60, 
-			time % 60
-		);
-		fflush(stdout);
+		if ((*clock) != -1) {
+			printf("\x1b[7m\x1b[%u;%uHTime: %02u:%02u", 
+				gridy + 2,
+				(31 - 11 - intsize(GRIDSIZE)) / 2, 
+				(*clock) / 60, 
+				(*clock) % 60
+			);
+			fflush(stdout);
+			(*clock)++;
+		}
 		usleep(1000000);
-		time++;
 	}
 }
 
 int main(void) {
 
+	int* clock = malloc(sizeof(int));
+
+	pthread_t timerthread;
+	// start the timer thread
+	pthread_create(
+		&timerthread, 
+		NULL, 
+		(void *)&timerfunc, 
+		clock
+	);
+
 	srand(time(0));
-	
+
+	start:
+	*clock = -1;
+
 	for (unsigned int i = 0; i < GRIDSIZE; ++i) {
 		grid[i].val = (
 			i + 1 + // inital 1-9 pattern
 			(i / 9 * 3) + // offset 3 per row
 			(i / (9 * 3)) // offset 9 per large row
 		) % 9 + 1;
+		grid[i].use = 0; // need to initialize (due to restarts)
 	}
 
 	// Genrate grid
@@ -202,21 +221,14 @@ int main(void) {
 	
 	//goto win; // DEBUG (print & exit)
 
-	// start the timer thread
-	pthread_t timerthread;
-	pthread_create(
-		&timerthread, 
-		NULL, 
-		(void *)&timerfunc, 
-		NULL
-	);
-
 	// set initial cursor position
 	cursorpos = GRIDSIZE / 2; // in the middle of the screen
 	while (grid[cursorpos].use == 0) { // if the middle is taken up by a tile, keep iterating it by 1 untill an empty one is found
 		cursorpos++;
 		if (cursorpos > GRIDSIZE) cursorpos = 0; // if loops of edge of grid reset to 0
 	}
+
+	*clock = 0;
 
 	char c;
 
@@ -317,7 +329,17 @@ int main(void) {
 			End:
 			1. reset all modes and goto the end of the grid (show cursor, reset color/bold, goto gridy + 2)
 		*/
-		printf("\x1b[?25h\x1b[0m\x1b[%u;0H\n", gridy + 2);
+
+		*clock = -1;
+		printf("\x1b[?25h\x1b[0m\x1b[%u;0H\nRestart? (y/n)", gridy + 2);
+		do { // wait for valid input, if y reset, otherwise quit
+			c = getchar();
+			//putchar(c);
+		} while (c != 121 && c != 110 && c != BREAK); // 121 = y, 110 = n
+		if (c == 121)
+			goto start;
+
+		//printf("", );
 		tcsetattr(0, TCSANOW, &restore); // restore terminal state
 		return 0;
 
